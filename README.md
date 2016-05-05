@@ -4,7 +4,7 @@
 
 A chat app built with [redux-saga](https://github.com/yelouafi/redux-saga) and [Socket.IO](http://socket.io/).
 
-The app is consist of two parts: [server](https://github.com/kuy/redux-saga-chat-example/tree/master/src/server) and [client](https://github.com/kuy/redux-saga-chat-example/tree/master/src/client).
+The app consists of two parts: [server](https://github.com/kuy/redux-saga-chat-example/tree/master/src/server) and [client](https://github.com/kuy/redux-saga-chat-example/tree/master/src/client).
 The server side, which is implemented with [koa](https://github.com/koajs/koa) + [koa-socket](https://github.com/mattstyles/koa-socket), provides Socket.IO endpoint and a (fake) DB backend.
 
 ## Get Started
