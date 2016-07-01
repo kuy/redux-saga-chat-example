@@ -1,17 +1,30 @@
 import io from 'socket.io-client';
-import { eventChannel } from 'redux-saga';
+import { eventChannel, END } from 'redux-saga';
 import { fork, take, call, put, cancel } from 'redux-saga/effects';
 import {
-  login, logout, addUser, removeUser, newMessage, sendMessage
+  login, logout, addUser, removeUser, newMessage, sendMessage,
+  connecting, ws_disconnected
 } from './actions';
 
 function connect() {
-  const socket = io('http://localhost:3000');
-  return new Promise(resolve => {
+  const socket = io('http://localhost:3000', {
+    'reconnection': true,
+    'reconnectionDelay': 1000,
+    'reconnectionDelayMax': 5000,
+    'reconnectionAttempts': 5
+  });
+  return new Promise((resolve, reject) => {
     socket.on('connect', () => {
       resolve(socket);
     });
-  });
+    socket.on('reconnect_failed', (err) => {
+      reject(new Error('ws:reconnect_failed '))
+    });
+  }).then(
+    response => ({ socket: response })
+    ).catch(
+    error => ({ socket, error })
+    );
 }
 
 function subscribe(socket) {
@@ -26,24 +39,34 @@ function subscribe(socket) {
       emit(newMessage({ message }));
     });
     socket.on('disconnect', e => {
-      // TODO: handle
+      emit(END)
     });
-    return () => {};
+    return () => { };
   });
 }
 
 function* read(socket) {
   const channel = yield call(subscribe, socket);
-  while (true) {
-    let action = yield take(channel);
-    yield put(action);
+  try {
+    while (true) {
+      let action = yield take(channel);
+      yield put(action);
+    }
+  }
+  finally {
+    yield put(ws_disconnected())
   }
 }
 
 function* write(socket) {
-  while (true) {
-    const { payload } = yield take(`${sendMessage}`);
-    socket.emit('message', payload);
+  try {
+    while (true) {
+      const { payload } = yield take(`${sendMessage}`);
+      socket.emit('message', payload);
+    }
+  }
+  finally {
+
   }
 }
 
@@ -52,20 +75,46 @@ function* handleIO(socket) {
   yield fork(write, socket);
 }
 
-function* flow() {
-  while (true) {
-    let { payload } = yield take(`${login}`);
-    const socket = yield call(connect);
-    socket.emit('login', { username: payload.username });
+function* flow(username) {
+  try {
+    while (true) {
+      yield put(connecting({ connecting: true }));
+      const { socket, error } = yield call(connect);
+      yield put(connecting({ connecting: false }));
 
-    const task = yield fork(handleIO, socket);
+      if (error) {
+        yield call([socket, socket.disconnect]);
+        yield put(logout());
+        break;
+      }
 
-    let action = yield take(`${logout}`);
-    yield cancel(task);
-    socket.emit('logout');
+      if (socket) {
+        socket.emit('login', { username });
+
+        const task = yield fork(handleIO, socket);
+
+        let action = yield take([`${logout}`, `${ws_disconnected}`]);
+        yield cancel(task);
+        socket.emit('logout');
+        yield call([socket, socket.disconnect]);
+        if (action.type == logout().type) {
+          break;
+        }
+      }
+    }
+  }
+  finally {
+
   }
 }
 
 export default function* rootSaga() {
-  yield fork(flow);
+  let myFlow;
+  while (true) {
+    let {payload} = yield take(`${login}`);
+    if (myFlow) {
+      yield cancel(myFlow);
+    }
+    myFlow = yield fork(flow, payload.username);
+  }
 }

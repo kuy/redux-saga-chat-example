@@ -1,12 +1,13 @@
 import { combineReducers } from 'redux';
 import { createReducer } from 'redux-act';
 import {
-  login, logout, addUser, removeUser, newMessage
+  login, logout, addUser, removeUser, newMessage, connecting
 } from './actions';
 
 const initial = {
   app: {
-    username: null
+    username: null,
+    connecting: false
   },
   users: {},
   messages: {
@@ -20,7 +21,10 @@ const app = createReducer({
     return { ...state, username: payload.username };
   },
   [logout]: (state, payload) => {
-    return { ...state, username: null };
+    return { ...state, username: null, connecting: false };
+  },
+  [connecting]: (state, payload) => {
+    return { ...state, connecting: payload.connecting };
   },
 }, initial.app);
 
