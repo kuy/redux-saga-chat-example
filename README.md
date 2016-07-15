@@ -1,5 +1,9 @@
 # redux-saga-chat-example
 
+## Do you have interest in more redux-saga examples?
+
+Please visit [kuy/redux-saga-examples](https://github.com/kuy/redux-saga-examples) repository to get more.
+
 ## WORK IN PROGRESS
 
 A chat app built with [redux-saga](https://github.com/yelouafi/redux-saga) and [Socket.IO](http://socket.io/).
