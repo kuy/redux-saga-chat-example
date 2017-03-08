@@ -8,3 +8,6 @@ export const removeUser = createAction('remove user');
 
 export const newMessage = createAction('new message');
 export const sendMessage = createAction('send message');
+
+export const ws_disconnected = createAction('ws is disconnected');
+export const connecting = createAction('connecting');
